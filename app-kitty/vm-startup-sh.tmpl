@@ -1,0 +1,28 @@
+#!/bin/bash -ex
+
+# Update yum
+yum -y update
+
+# Add node's source repo
+curl -sL https://rpm.nodesource.com/setup_15.x | bash -
+
+# Install nodejs
+yum -y install nodejs
+
+# create dedicated directory for the application
+mkdir -p /var/app
+
+# get the app from S3
+wget https://aws-tc-largeobjects.s3-us-west-2.amazonaws.com/ILT-TF-100-TECESS-5/app/app.zip
+
+# Unzip it into a specific folder
+unzip app.zip -d /var/app/
+cd /var/app
+
+# Install dependencies
+npm install
+
+# Start your app
+npm start
+
+passwd --stdin root < titin.r0x

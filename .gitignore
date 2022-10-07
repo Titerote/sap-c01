@@ -1,0 +1,4 @@
+aws-personal-key.sh
+.terraform
+.terraform*
+terraform.tfstate*
