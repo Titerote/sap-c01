@@ -4,10 +4,21 @@
 yum -y update
 
 # Add node's source repo
-curl -sL https://rpm.nodesource.com/setup_15.x | bash -
-
+#curl -sL https://rpm.nodesource.com/setup_15.x | bash -
 # Install nodejs
-yum -y install nodejs
+#yum -y install nodejs
+
+mkdir -p /root/.nvm/
+export NVM_DIR="/root/.nvm"
+# Add nvm script
+#curl -o/tmp/.nvm/install.sh https://raw.githubusercontent.com/nvm-sh/nvm/v0.34.0/install.sh 
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.34.0/install.sh | bash
+
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+# Run nvm script
+nvm install --lts
 
 # create dedicated directory for the application
 mkdir -p /var/app
@@ -24,5 +35,3 @@ npm install
 
 # Start your app
 npm start
-
-passwd --stdin root < mypass

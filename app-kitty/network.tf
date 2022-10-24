@@ -14,7 +14,7 @@ data "aws_subnet" "default" {
 
 ### Create VPC with GW-NAT routed through main route-table
 resource "aws_vpc" "kitty-app" { 
-    cidr_block = "10.1.0.0/16"
+    cidr_block = "10.0.0.0/16"
 
     tags = {
         Name = "app-vpc"
@@ -65,6 +65,7 @@ resource "aws_internet_gateway" "gw" {
     }
 }
 
+## VPC Public route 
 resource "aws_route_table" "public" {
     vpc_id = aws_vpc.kitty-app.id
     tags = {
@@ -73,6 +74,7 @@ resource "aws_route_table" "public" {
     route = []
 }
 
+### VPC Public Route - default gw
 resource "aws_route" "inet" {
     route_table_id = aws_route_table.public.id
 
@@ -80,36 +82,43 @@ resource "aws_route" "inet" {
     gateway_id = aws_internet_gateway.gw.id
 }
 
-resource "aws_route_table_association" "public" {
-    route_table_id = aws_route_table.public.id
-    subnet_id = aws_subnet.kitty-public.id
-}
 
+### VPC Subnet 1 - public
 resource "aws_subnet" "kitty-public" { 
     vpc_id = aws_vpc.kitty-app.id
     #availability_zone = "us-east-1f"
     availability_zone = data.aws_availability_zone.primary.id
-    cidr_block = "10.1.1.0/24"
+    cidr_block = "10.0.1.0/24"
     tags = {
         Name = "Public Subnet 1"
     }
 }
 
-resource "aws_route_table_association" "public-standby" {
+### VPC Public Route - subnet-1 association
+resource "aws_route_table_association" "public" {
     route_table_id = aws_route_table.public.id
-    subnet_id = aws_subnet.kitty-public-standby.id
+    subnet_id = aws_subnet.kitty-public.id
 }
 
+### VPC Subnet 2 - public standby
 resource "aws_subnet" "kitty-public-standby" { 
     vpc_id = aws_vpc.kitty-app.id
     #availability_zone = "us-east-1f"
     availability_zone = data.aws_availability_zone.secondary.id
-    cidr_block = "10.1.2.0/24"
+    cidr_block = "10.0.2.0/24"
+    map_public_ip_on_launch = true
     tags = {
         Name = "Public Subnet 1 Standby"
     }
 }
 
+### VPC Public Route - subnet-2 association
+resource "aws_route_table_association" "public-standby" {
+    route_table_id = aws_route_table.public.id
+    subnet_id = aws_subnet.kitty-public-standby.id
+}
+
+### VPC Subnet 3 - private
 resource "aws_subnet" "kitty-private" { 
     vpc_id = aws_vpc.kitty-app.id
     #availability_zone = "us-east-1f"
@@ -117,9 +126,10 @@ resource "aws_subnet" "kitty-private" {
     tags = {
         Name = "Private Subnet 1"
     }
-    cidr_block = "10.1.3.0/24"
+    cidr_block = "10.0.3.0/24"
 }
 
+### VPC Private Route - subnet-3 association
 resource "aws_route_table_association" "private" {
     route_table_id = aws_route_table.kitty-main.id
     subnet_id = aws_subnet.kitty-private.id
@@ -129,13 +139,61 @@ resource "aws_subnet" "kitty-private-standby" {
     vpc_id = aws_vpc.kitty-app.id
     #availability_zone = "us-east-1f"
     availability_zone = data.aws_availability_zone.secondary.id
+    map_public_ip_on_launch = true
     tags = {
         Name = "Private Subnet 1 Standby"
     }
-    cidr_block = "10.1.4.0/24"
+    cidr_block = "10.0.4.0/24"
 }
 
 resource "aws_route_table_association" "private-standby" {
     route_table_id = aws_route_table.kitty-main.id
     subnet_id = aws_subnet.kitty-private-standby.id
+}
+
+resource "aws_security_group" "allow_tls" {
+  name        = "allow_tls"
+  description = "Allow HTTP and HTTPS traffic"
+  vpc_id      = aws_vpc.kitty-app.id
+#  vpc_id      = data.aws_vpc.default.id
+
+  ingress {
+    description      = "SSH from Management"
+    from_port        = 22
+    to_port          = 22
+    protocol         = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"]
+    # ipv6_cidr_blocks = [data.aws_vpc.default.ipv6_cidr_block]
+  }
+
+  ingress {
+    description      = "Port 80 inbound"
+    from_port        = 80
+    to_port          = 80
+    protocol         = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"]
+    # ipv6_cidr_blocks = [data.aws_vpc.default.ipv6_cidr_block]
+  }
+
+  ingress {
+    description      = "TLS from VPC"
+    from_port        = 443
+    to_port          = 443
+    protocol         = "tcp"
+    #cidr_blocks      = [data.aws_vpc.default.cidr_block]
+    cidr_blocks      = ["0.0.0.0/0"]
+    # ipv6_cidr_blocks = [data.aws_vpc.default.ipv6_cidr_block]
+  }
+
+  egress {
+    from_port        = 0
+    to_port          = 0
+    protocol         = "-1"
+    cidr_blocks      = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
+  }
+
+  tags = {
+    Name = "allow_tls"
+  }
 }
