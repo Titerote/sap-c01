@@ -58,9 +58,13 @@ resource "aws_network_interface" "vmnic" {
 
 }
 
+locals {
+  instance_type = "t2.small"
+}
+
 resource "aws_instance" "employee-app" {
     ami = data.aws_ami.amazon-linux-2.id
-    instance_type = "t3.micro"
+    instance_type = local.instance_type
 
     tags = {
         project = "SAP-C01"
@@ -99,7 +103,7 @@ resource "aws_eip" "eployee-app-pip" {
 
 resource "aws_instance" "employee-app-standby" {
     ami = data.aws_ami.amazon-linux-2.id
-    instance_type = "t3.micro"
+    instance_type = local.instance_type
 
     tags = {
         project = "SAP-C01"
@@ -112,10 +116,10 @@ resource "aws_instance" "employee-app-standby" {
     user_data_replace_on_change = true
     user_data_base64 = base64encode(data.template_cloudinit_config.config.rendered)
 
-    associate_public_ip_address = true
+    # associate_public_ip_address = true
     #vpc_security_group_ids = [aws_security_group.allow_tls.id]
     #security_groups = ["allow_tls"]
-    /** **
+    /** **/
     network_interface {
         network_interface_id = aws_network_interface.vmnic-standby.id
         device_index = 0
@@ -125,9 +129,11 @@ resource "aws_instance" "employee-app-standby" {
     depends_on = [aws_iam_instance_profile.kitty-app]
 }
     
+/** **
 output "user_data" {
   value = "${data.template_cloudinit_config.config.rendered}"
 }
+/** **/
 
 resource "aws_network_interface" "vmnic-standby" {
     #subnet_id = data.aws_subnet.default.id
