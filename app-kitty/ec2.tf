@@ -89,7 +89,7 @@ resource "aws_instance" "employee-app" {
     }
     /** **/
 
-    depends_on = [aws_iam_instance_profile.kitty-app]
+    depends_on = [aws_iam_instance_profile.kitty-app, aws_route.inet]
 }
 
 resource "aws_eip" "eployee-app-pip" {
@@ -126,7 +126,7 @@ resource "aws_instance" "employee-app-standby" {
     }
     /** **/
 
-    depends_on = [aws_iam_instance_profile.kitty-app]
+    depends_on = [aws_iam_instance_profile.kitty-app, aws_route.inet]
 }
     
 /** **
