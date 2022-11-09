@@ -22,6 +22,7 @@ resource "aws_lb" "employee" {
         Name = "Employee App LB"
         Environment = "dev"
     }
+
 }
 
 /** **
@@ -151,5 +152,6 @@ resource "aws_autoscaling_policy" "cpu" {
         # disable_scale_in = false
     }
     estimated_instance_warmup = 300
+    # cooldown = 300
 
 }
